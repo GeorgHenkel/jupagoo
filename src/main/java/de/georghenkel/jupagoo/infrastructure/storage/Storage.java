@@ -11,7 +11,7 @@ public interface Storage {
 
   Stream<String> listFolder(@Nullable String path);
 
-  CompletableFuture<UploadResult> upload(InputStream is, @Nullable final String path);
+  CompletableFuture<UploadResult> upload(InputStream is, String fileName, @Nullable final String path);
 
   Optional<String> getUploadFailure();
 }
