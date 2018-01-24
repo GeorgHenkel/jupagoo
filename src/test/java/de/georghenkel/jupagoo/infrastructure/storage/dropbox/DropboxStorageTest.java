@@ -4,21 +4,25 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import de.georghenkel.jupagoo.infrastructure.storage.UploadResult;
 
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class DropboxStorageTest {
   private static final Logger LOG = LoggerFactory.getLogger(DropboxStorage.class);
 
   private static String ACCESS_TOKEN;
 
-  private DropboxStorage storage;
+  private final DropboxStorage storage = new DropboxStorage();
 
   @Before
   public void setUp() throws IOException {
@@ -29,19 +33,35 @@ public class DropboxStorageTest {
   }
 
   @Test
-  public void shouldNotFindFolder() {
-
+  public void step1_shouldFindNoFolder() {
+    Stream<String> fileStream = storage.initConnection(ACCESS_TOKEN).listFolder(null);
+    Assert.assertTrue(fileStream.count() == 0);
   }
 
   @Test
-  public void shouldUploadFile() {
-    storage = new DropboxStorage();
+  public void step2_shouldUploadFile() {
+    InputStream is = DropboxStorage.class.getClassLoader().getResourceAsStream("upload_test.txt");
+    CompletableFuture<UploadResult> uploadFuture =
+        storage.initConnection(ACCESS_TOKEN).upload(is, "test.txt", "test");
 
-    Stream<String> fileStream = storage.initConnection(ACCESS_TOKEN).listFolder("jupagoo"); // .upload(is,
-    List<String> files = fileStream.collect(Collectors.toList());
-    LOG.info("Count of files: " + files.size());
-    Assert.assertTrue(files.size() > 0);
+    try {
+      UploadResult result = uploadFuture.get();
+      Assert.assertEquals(UploadResult.SUCCESSFULL, result);
+    } catch (InterruptedException | ExecutionException ex) {
+      Assert.fail(ex.getMessage());
+    }
+  }
 
-    files.forEach(LOG::info);
+  @Test
+  public void step3_shouldFindFolder() {
+    Stream<String> fileStream = storage.initConnection(ACCESS_TOKEN).listFolder("test");
+    Assert.assertTrue(fileStream.count() == 1);
+  }
+
+  @Test
+  public void step4_shouldDeleteFolder() {
+    storage.initConnection(ACCESS_TOKEN).deleteFolder("test");
+    Stream<String> fileStream = storage.initConnection(ACCESS_TOKEN).listFolder("test");
+    Assert.assertTrue(fileStream.count() == 0);
   }
 }

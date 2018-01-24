@@ -10,6 +10,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.stream.Stream;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.google.api.client.auth.oauth2.Credential;
@@ -63,13 +64,13 @@ public class GoogleDriveStorage implements Storage {
 
   @Override
   public Stream<String> listFolder(final String path) {
-    Optional<String> optPath = Optional.ofNullable(path);
-    LOG.debug("Creating folder listing for path: " + optPath.orElse(""));
-
     assertClientConnected();
 
+    String folder = getPath(path);
+    LOG.debug("Creating folder listing for path: " + folder);
+
     try {
-      FileList fileList = client.files().list().setQ("'" + path + "' in parents").execute();
+      FileList fileList = client.files().list().setQ("'" + folder + "' in parents").execute();
       return fileList.getFiles().stream().map(e -> e.getName()).sorted(String::compareTo);
     } catch (IOException ex) {
       LOG.error("Could not retrieve file list", ex);
@@ -80,15 +81,20 @@ public class GoogleDriveStorage implements Storage {
   @Override
   public CompletableFuture<UploadResult> upload(final InputStream is, final String fileName,
       final String path) {
-    Optional<String> optPath = Optional.ofNullable(path);
-    LOG.debug("Uploading file to path: " + optPath.orElse(""));
-
     assertClientConnected();
+
+    String folder = getPath(path);
+    LOG.debug("Uploading file to path: " + folder);
 
     CompletableFuture<UploadResult> completableFuture = new CompletableFuture<>();
     Executors.newCachedThreadPool().submit(() -> {
       try {
-        File metadata = new File().setName(fileName);
+        // FIXME: load folder id
+        String folderId = "0BwwA4oUTeiV1TGRPeTVjaWRDY1E";
+        File metadata = new File();
+        metadata.setName(fileName);
+        // metadata.setParents(Collections.singletonList(folderId));
+
         InputStreamContent mediaContent = new InputStreamContent(null, is);
         client.files().create(metadata, mediaContent).setFields("id").execute();
 
@@ -104,6 +110,19 @@ public class GoogleDriveStorage implements Storage {
     });
 
     return null;
+  }
+
+  @Override
+  public void deleteFolder(final String path) {
+    assertClientConnected();
+
+    if (StringUtils.isBlank(path)) {
+      throw new RuntimeException("Path for deletion must not be null");
+    }
+
+    String folder = getPath(path);
+    LOG.debug("Deleting folder to path: " + folder);
+
   }
 
   @Override
@@ -124,6 +143,11 @@ public class GoogleDriveStorage implements Storage {
 
     LocalServerReceiver localServerReicer = new LocalServerReceiver.Builder().setPort(9876).build();
     return new AuthorizationCodeInstalledApp(flow, localServerReicer).authorize("user");
+  }
+
+  private String getPath(final String path) {
+    Optional<String> optPath = Optional.ofNullable(path);
+    return APPLICATION_FOLDER + "/" + optPath.orElse("");
   }
 
   private void assertClientConnected() {

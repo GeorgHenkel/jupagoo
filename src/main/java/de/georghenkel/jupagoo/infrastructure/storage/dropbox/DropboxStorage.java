@@ -1,12 +1,12 @@
 package de.georghenkel.jupagoo.infrastructure.storage.dropbox;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.stream.Stream;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.dropbox.core.DbxException;
@@ -36,13 +36,13 @@ public class DropboxStorage implements Storage {
 
   @Override
   public Stream<String> listFolder(final String path) {
-    Optional<String> optPath = Optional.ofNullable(path);
-    LOG.debug("Creating folder listing for path: " + optPath.orElse(""));
-
     assertClientConnected();
 
+    String folder = getPath(path);
+    LOG.debug("Creating folder listing for path: " + folder);
+
     try {
-      ListFolderResult result = client.files().listFolder("/" + optPath.orElse(""));
+      ListFolderResult result = client.files().listFolder(folder);
       return result.getEntries().stream().map(e -> e.getName()).sorted(String::compareTo);
     } catch (ListFolderErrorException ex) {
       return Stream.of(new String[0]);
@@ -55,16 +55,16 @@ public class DropboxStorage implements Storage {
   @Override
   public CompletableFuture<UploadResult> upload(final InputStream is, final String fileName,
       final String path) {
-    Optional<String> optPath = Optional.ofNullable(path);
-    LOG.debug("Uploading file to path: " + optPath.orElse(""));
-
     assertClientConnected();
+
+    String uploadPath = getPath(path);
+    LOG.debug("Uploading file to path: " + uploadPath);
 
     CompletableFuture<UploadResult> completableFuture = new CompletableFuture<>();
     Executors.newCachedThreadPool().submit(() -> {
-      try (InputStream in = new FileInputStream("test.txt")) {
-        client.files().uploadBuilder(optPath.orElse("") + fileName).withAutorename(true)
-            .withMute(true).uploadAndFinish(in);
+      try {
+        client.files().uploadBuilder(uploadPath + "/" + fileName).withAutorename(true)
+            .withMute(true).uploadAndFinish(is);
         completableFuture.complete(UploadResult.SUCCESSFULL);
 
         LOG.debug("Upload finished successfully");
@@ -81,8 +81,32 @@ public class DropboxStorage implements Storage {
   }
 
   @Override
+  public void deleteFolder(final String path) {
+    assertClientConnected();
+
+    if (StringUtils.isBlank(path)) {
+      throw new RuntimeException("Path for deletion must not be null");
+    }
+
+    String folder = getPath(path);
+    LOG.debug("Deleting folder: " + folder);
+
+    try {
+      client.files().deleteV2(folder);
+    } catch (DbxException ex) {
+      LOG.error("Could not delete folder", ex);
+      throw new RuntimeException("Unable to delete folder", ex);
+    }
+  }
+
+  @Override
   public Optional<String> getUploadFailure() {
     return Optional.ofNullable(uploadError);
+  }
+
+  private String getPath(final String path) {
+    Optional<String> optPath = Optional.ofNullable(path);
+    return APPLICATION_FOLDER + "/" + optPath.orElse("");
   }
 
   private void assertClientConnected() {
