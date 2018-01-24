@@ -6,11 +6,9 @@ import java.io.InputStreamReader;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.google.api.client.auth.oauth2.Credential;
@@ -27,11 +25,12 @@ import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.FileList;
+import de.georghenkel.jupagoo.infrastructure.storage.AbstractStorage;
 import de.georghenkel.jupagoo.infrastructure.storage.Storage;
 import de.georghenkel.jupagoo.infrastructure.storage.UploadResult;
 import de.georghenkel.jupagoo.infrastructure.storage.dropbox.DropboxStorage;
 
-public class GoogleDriveStorage implements Storage {
+public class GoogleDriveStorage extends AbstractStorage {
   private static final Logger LOG = LoggerFactory.getLogger(DropboxStorage.class);
 
   private static final String APPLICATION_NAME = "jupagoo";
@@ -40,7 +39,6 @@ public class GoogleDriveStorage implements Storage {
   private static final List<String> SCOPES = Arrays.asList(DriveScopes.DRIVE_FILE);
 
   private Drive client;
-  private String uploadError;
 
   @Override
   public Storage initConnection(final String accessToken) {
@@ -63,12 +61,7 @@ public class GoogleDriveStorage implements Storage {
   }
 
   @Override
-  public Stream<String> listFolder(final String path) {
-    assertClientConnected();
-
-    String folder = getPath(path);
-    LOG.debug("Creating folder listing for path: " + folder);
-
+  protected Stream<String> getFolderListing(final String folder) {
     try {
       FileList fileList = client.files().list().setQ("'" + folder + "' in parents").execute();
       return fileList.getFiles().stream().map(e -> e.getName()).sorted(String::compareTo);
@@ -79,14 +72,8 @@ public class GoogleDriveStorage implements Storage {
   }
 
   @Override
-  public CompletableFuture<UploadResult> upload(final InputStream is, final String fileName,
-      final String path) {
-    assertClientConnected();
-
-    String folder = getPath(path);
-    LOG.debug("Uploading file to path: " + folder);
-
-    CompletableFuture<UploadResult> completableFuture = new CompletableFuture<>();
+  protected void upload(final InputStream is, final String fileName, final String path,
+      final CompletableFuture<UploadResult> completableFuture) {
     Executors.newCachedThreadPool().submit(() -> {
       try {
         // FIXME: load folder id
@@ -105,29 +92,12 @@ public class GoogleDriveStorage implements Storage {
         LOG.error("Upload failed", ex);
         uploadError = ex.getMessage();
       }
-
-      return null;
     });
-
-    return null;
   }
 
   @Override
-  public void deleteFolder(final String path) {
-    assertClientConnected();
-
-    if (StringUtils.isBlank(path)) {
-      throw new RuntimeException("Path for deletion must not be null");
-    }
-
-    String folder = getPath(path);
-    LOG.debug("Deleting folder to path: " + folder);
-
-  }
-
-  @Override
-  public Optional<String> getUploadFailure() {
-    return Optional.ofNullable(uploadError);
+  public void delete(final String folder) {
+    // FIXME
   }
 
   private Credential authorize(final JacksonFactory jsonFactory, final HttpTransport httpTransport,
@@ -145,12 +115,8 @@ public class GoogleDriveStorage implements Storage {
     return new AuthorizationCodeInstalledApp(flow, localServerReicer).authorize("user");
   }
 
-  private String getPath(final String path) {
-    Optional<String> optPath = Optional.ofNullable(path);
-    return APPLICATION_FOLDER + "/" + optPath.orElse("");
-  }
-
-  private void assertClientConnected() {
+  @Override
+  protected void assertClientConnected() {
     if (client == null) {
       LOG.warn("Client is not initialized, cancelling operation");
 
