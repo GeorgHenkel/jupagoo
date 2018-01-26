@@ -1,2 +1,2 @@
 FROM airhacks/glassfish
-COPY ./target/dadoop.war ${DEPLOYMENT_DIR}
+COPY ./target/jupagoo.war ${DEPLOYMENT_DIR}

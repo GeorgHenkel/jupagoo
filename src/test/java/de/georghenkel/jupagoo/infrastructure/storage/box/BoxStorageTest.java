@@ -1,4 +1,4 @@
-package de.georghenkel.jupagoo.infrastructure.storage.dropbox;
+package de.georghenkel.jupagoo.infrastructure.storage.box;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -10,25 +10,26 @@ import java.util.stream.Stream;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import de.georghenkel.jupagoo.infrastructure.storage.Storage;
 import de.georghenkel.jupagoo.infrastructure.storage.UploadResult;
 
+@Ignore
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class DropboxStorageTest {
+public class BoxStorageTest {
   private String accessToken;
   private Storage storage;
 
   @Before
   public void setUp() throws IOException {
-    InputStream is =
-        DropboxStorageTest.class.getClassLoader().getResourceAsStream("access_token.txt");
+    InputStream is = BoxStorageTest.class.getClassLoader().getResourceAsStream("access_token.txt");
     try (BufferedReader buffer = new BufferedReader(new InputStreamReader(is))) {
       accessToken = buffer.lines().findFirst().orElse("");
     }
 
-    storage = new DropboxStorage().initConnection(accessToken);
+    storage = new BoxStorage().initConnection(accessToken);
   }
 
   @Test
@@ -39,8 +40,7 @@ public class DropboxStorageTest {
 
   @Test
   public void step2_shouldUploadFile() {
-    InputStream is =
-        DropboxStorageTest.class.getClassLoader().getResourceAsStream("upload_test.txt");
+    InputStream is = BoxStorageTest.class.getClassLoader().getResourceAsStream("upload_test.txt");
     CompletableFuture<UploadResult> uploadFuture = storage.upload(is, "test.txt", "test");
 
     try {
