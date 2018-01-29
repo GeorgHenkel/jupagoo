@@ -22,8 +22,8 @@ public class DropboxStorageTest {
 
   @Before
   public void setUp() throws IOException {
-    InputStream is =
-        DropboxStorageTest.class.getClassLoader().getResourceAsStream("access_token.txt");
+    InputStream is = DropboxStorageTest.class.getClassLoader()
+        .getResourceAsStream("storage/dropbox/access_token.txt");
     try (BufferedReader buffer = new BufferedReader(new InputStreamReader(is))) {
       accessToken = buffer.lines().findFirst().orElse("");
     }
@@ -40,7 +40,7 @@ public class DropboxStorageTest {
   @Test
   public void step2_shouldUploadFile() {
     InputStream is =
-        DropboxStorageTest.class.getClassLoader().getResourceAsStream("upload_test.txt");
+        DropboxStorageTest.class.getClassLoader().getResourceAsStream("storage/upload_test.txt");
     CompletableFuture<UploadResult> uploadFuture = storage.upload(is, "test.txt", "test");
 
     try {
