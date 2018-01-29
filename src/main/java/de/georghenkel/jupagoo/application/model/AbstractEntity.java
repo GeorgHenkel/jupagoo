@@ -1,4 +1,4 @@
-package de.georghenkel.jupagoo.domain;
+package de.georghenkel.jupagoo.application.model;
 
 import java.io.Serializable;
 import javax.persistence.Column;

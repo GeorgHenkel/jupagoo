@@ -1,4 +1,4 @@
-package de.georghenkel.jupagoo.domain.sharing;
+package de.georghenkel.jupagoo.domain.sharing.model;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -8,8 +8,8 @@ import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
-import de.georghenkel.jupagoo.domain.AbstractEntity;
-import de.georghenkel.jupagoo.domain.storage.StorageConnection;
+import de.georghenkel.jupagoo.application.model.AbstractEntity;
+import de.georghenkel.jupagoo.domain.storage.model.StorageConnection;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
