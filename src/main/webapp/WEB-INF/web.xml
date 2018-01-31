@@ -25,4 +25,12 @@
 	<session-config>
 		<session-timeout>30</session-timeout>
 	</session-config>
+
+	<data-source>
+		<name>java:app/jdbc/jupagooDS</name>
+		<class-name>org.apache.derby.jdbc.EmbeddedDriver</class-name>
+		<url>jdbc:derby:memory:jupagooDB;create=true</url>
+		<user>sa</user>
+		<password>sa</password>
+	</data-source>
 </web-app>
