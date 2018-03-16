@@ -24,7 +24,7 @@
 					<p:repeat value="#{storageProviderController.availableProviders}"
 						var="provider">
 						<p:button value="#{msg[provider.messageKey]}"
-							icon="#{provider.icon}">
+							icon="fa fa-fw #{provider.icon}">
 							<h:panelGroup
 								rendered="#{storageProviderController.isManaged(provider)}"
 								styleClass="managed-ribbon" />

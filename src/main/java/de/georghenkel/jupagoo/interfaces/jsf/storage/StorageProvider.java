@@ -3,8 +3,8 @@ package de.georghenkel.jupagoo.interfaces.jsf.storage;
 import de.georghenkel.jupagoo.domain.storage.model.StorageType;
 
 public enum StorageProvider {
-  DROPBOX(StorageType.DROPBOX, "icons/dropbox.png"), GOOGLE_DRIVE(StorageType.GOOGLE_DRIVE,
-      "icons/google_drive.png"), BOX(StorageType.BOX, "icons/box.png");
+  DROPBOX(StorageType.DROPBOX, "fa-dropbox"), GOOGLE_DRIVE(StorageType.GOOGLE_DRIVE,
+      "fa-google"), BOX(StorageType.BOX, "fa-cloud");
 
   private StorageType type;
   private String icon;
